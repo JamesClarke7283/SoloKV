@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::io::{Read, Write}; // Make sure `Read` is correctly imported
 
-pub fn serialize<K, V, W>(_writer: W, _data: &HashMap<K, V>) -> Result<(), DatabaseError>
+pub(crate) fn serialize<K, V, W>(_writer: W, _data: &HashMap<K, V>) -> Result<(), DatabaseError>
 where
     K: Serialize + Debug,
     V: Serialize,
@@ -16,7 +16,10 @@ where
 }
 
 // Adjusted for consistency with json.rs correction
-pub fn deserialize<K, V, R>(_reader: R, _data: &mut HashMap<K, V>) -> Result<(), DatabaseError>
+pub(crate) fn deserialize<K, V, R>(
+    _reader: R,
+    _data: &mut HashMap<K, V>,
+) -> Result<(), DatabaseError>
 where
     R: Read,
     K: Deserialize<'static> + Serialize + Eq + Hash + Debug, // Adjusted for consistency

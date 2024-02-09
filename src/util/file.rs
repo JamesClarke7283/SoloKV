@@ -7,7 +7,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
-pub fn save<K, V>(
+pub(crate) fn save<K, V>(
     path: &PathBuf,
     format: StorageFormat,
     data: &HashMap<K, V>,
@@ -31,7 +31,7 @@ where
     Ok(())
 }
 
-pub fn load<K, V>(
+pub(crate) fn load<K, V>(
     path: &PathBuf,
     format: StorageFormat,
     data: &mut HashMap<K, V>,

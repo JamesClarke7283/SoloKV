@@ -1,2 +1,2 @@
-pub mod binary;
-pub mod json;
+pub(crate) mod binary;
+pub(crate) mod json;
