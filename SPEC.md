@@ -113,6 +113,10 @@ streamlines the architecture and operation of Solo KV, focusing on direct and
 straightforward data interactions without the overhead of managing transaction
 logs.
 
+To incorporate Rust Generics for types that can be any datatype and to update
+the error type to `DatabaseError`, the API Specification section can be amended
+as follows:
+
 ## API Specification
 
 Solo KV offers a simple yet powerful API designed for flexibility and
@@ -123,7 +127,7 @@ flexibility, and efficiency.
 ### Initializing a Database Connection
 
 ```rust
-fn new(path: String, format: Option<StorageFormat>) -> Result<Database, SoloError>
+fn new(path: String, format: Option<StorageFormat>) -> Result<Database, DatabaseError>
 ```
 
 - **`path`**: The file path (either relative or absolute) where the database is
@@ -135,16 +139,16 @@ fn new(path: String, format: Option<StorageFormat>) -> Result<Database, SoloErro
 ### Listing All Keys
 
 ```rust
-fn keys() -> Vec<DynamicType>
+fn keys<T>() -> Result<Vec<T>, DatabaseError>
 ```
 
-- **Returns**: A vector containing all keys in the database in their stored data
-  types.
+- **Returns**: A result wrapping a vector containing all keys in the database in
+  their stored data types, or an error.
 
 ### Retrieving a Value
 
 ```rust
-fn get(key: DynamicType) -> Result<DynamicType, SoloError>
+fn get<T, U>(key: T) -> Result<U, DatabaseError>
 ```
 
 - **`key`**: The key for which to retrieve the value, which can be of any data
@@ -154,7 +158,7 @@ fn get(key: DynamicType) -> Result<DynamicType, SoloError>
 ### Inserting or Updating a Value
 
 ```rust
-fn put(key: DynamicType, value: Option<DynamicType>) -> Result<(), SoloError>
+fn put<T, U>(key: T, value: Option<U>) -> Result<(), DatabaseError>
 ```
 
 - **`key`**: The key to insert or update, which can be of any data type.
@@ -165,18 +169,62 @@ fn put(key: DynamicType, value: Option<DynamicType>) -> Result<(), SoloError>
 ### Checking Existence of a Key
 
 ```rust
-fn exists(key: DynamicType) -> bool
+fn exists<T>(key: T) -> Result<bool, DatabaseError>
 ```
 
 - **`key`**: The key to check for existence, which can be of any data type.
-- **Returns**: `true` if the key exists, `false` otherwise.
+- **Returns**: A result indicating `true` if the key exists, `false` otherwise,
+  or an error.
 
 ### Error Handling
 
-Solo KV uses the `thiserror` crate for custom error handling, ensuring that all
-functions return a `Result` type. This approach allows operations to either
-succeed, returning `Ok` with any relevant data, or fail, returning an `Err` with
-an error description.
+Solo KV leverages the `thiserror` crate to facilitate sophisticated error
+handling across its API, ensuring that every function communicates its outcome
+through a `Result` type. This structured approach enables each operation to
+conclusively signal success with an `Ok` containing any pertinent data, or in
+cases of failure, an `Err` detailing the specific issue encountered.
+
+#### `new` Function Error Handling
+
+Errors encountered by the `new` function include:
+
+- **`PermissionError`**: Occurs when the application lacks the necessary
+  permissions to access or modify the database file.
+- **`InvalidFormatError`**: Arises if the specified storage format is invalid or
+  incompatible, despite an alternative valid format being available.
+- **`MalformedFileError`**: Triggered when none of the specified formats are
+  applicable, leading to read/write failures due to corrupted or malformed
+  database content.
+
+These errors ensure that users are immediately aware of issues related to file
+access, format mismatches, or data integrity.
+
+#### `keys` Function Error Handling
+
+The `keys` function is designed to be robust, with potential failures primarily
+aligned with those encountered by the `new` function, such as file access or
+format-related issues.
+
+#### `get` Function Error Handling
+
+In addition to the general errors outlined for the `new` function, `get` may
+specifically fail due to:
+
+- **`KeyNotFoundError`**: Indicates that the requested key does not exist within
+  the database, ensuring users are informed when attempting to access
+  nonexistent data.
+
+#### `put` Function Error Handling
+
+The `put` function shares potential errors with the `new` function, addressing
+concerns related to file permissions, data format validity, and file integrity
+during data insertion or update operations.
+
+#### `exists` Function Error Handling
+
+Similar to `put`, the `exists` function's error handling mechanism covers
+scenarios identified in the `new` function's error set, safeguarding against
+file access and format discrepancies when verifying the existence of keys.
 
 ### Concurrency
 
