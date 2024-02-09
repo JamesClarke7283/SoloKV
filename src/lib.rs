@@ -85,3 +85,88 @@ where
         self.data.contains_key(key)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn temp_db_path(format: &str) -> String {
+        format!("/tmp/solokv_test_db_{}.json", format)
+    }
+
+    #[test]
+    fn test_database_new() {
+        let path = temp_db_path("new");
+        {
+            let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
+                .expect("Failed to create new database");
+            // Ensure some data is put in the database to trigger file creation.
+            db.put("init_key".to_string(), Some("init_value".to_string()))
+                .unwrap();
+        }
+        assert!(
+            PathBuf::from(&path).exists(),
+            "Database file was not created."
+        );
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn test_database_put_get() {
+        let path = temp_db_path("put_get");
+        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
+            .expect("Failed to create database for put/get test");
+
+        db.put("key1".to_string(), Some("value1".to_string()))
+            .unwrap();
+        assert_eq!(db.get(&"key1".to_string()).unwrap(), &"value1".to_string());
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn test_database_keys() {
+        let path = temp_db_path("keys");
+        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
+            .expect("Failed to create database for keys test");
+
+        db.put("key1".to_string(), Some("value1".to_string()))
+            .unwrap();
+        db.put("key2".to_string(), Some("value2".to_string()))
+            .unwrap();
+
+        let keys = db.keys();
+        assert!(keys.contains(&&"key1".to_string()));
+        assert!(keys.contains(&&"key2".to_string()));
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn test_database_exists() {
+        let path = temp_db_path("exists");
+        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
+            .expect("Failed to create database for exists test");
+
+        db.put("key1".to_string(), Some("value1".to_string()))
+            .unwrap();
+        assert!(db.exists(&"key1".to_string()));
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn test_database_delete() {
+        let path = temp_db_path("delete");
+        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
+            .expect("Failed to create database for delete test");
+
+        db.put("key1".to_string(), Some("value1".to_string()))
+            .unwrap();
+        db.put("key1".to_string(), None).unwrap();
+        assert!(!db.exists(&"key1".to_string()));
+
+        fs::remove_file(path).unwrap();
+    }
+}
