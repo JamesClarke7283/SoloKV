@@ -3,8 +3,7 @@
 ## Introduction
 
 Solo KV is a pioneering key-value storage system designed with the modern
-application developer in mind. Developed in Rust and leveraging Protocol Buffers
-(ProtoBuf) for serialization, Solo KV aims to redefine simplicity, flexibility,
+application developer in mind. Developed in Rust, Solo KV aims to redefine simplicity, flexibility,
 and efficiency in data storage. By encapsulating the entire database within a
 single file, Solo KV offers an unparalleled blend of performance and ease of use
 for a wide array of applications, from lightweight web services to complex,
