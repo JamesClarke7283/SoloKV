@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::{File, OpenOptions};
-use std::io::{BufReader, BufWriter, Read};
+use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 
 #[cfg(feature = "logging")]
@@ -62,27 +62,22 @@ where
         return Ok(());
     }
 
-    let file = File::open(path).map_err(DatabaseError::IoError)?;
+    let file = File::open(path)?;
     let mut buf_reader = BufReader::new(file);
-    let mut buffer = Vec::new();
-    buf_reader
-        .read_to_end(&mut buffer)
-        .map_err(DatabaseError::IoError)?;
-
-    if buffer.is_empty() {
-        *data = HashMap::new();
-        return Ok(());
-    }
 
     match format {
         StorageFormat::Json => {
-            json::deserialize(&mut buf_reader, data)?;
+            // Here we use json::deserialize function to deserialize the data
+            json::deserialize(buf_reader, data)?;
         }
-
         StorageFormat::Binary => {
-            binary::deserialize(&mut buf_reader, data)?;
+            // Assuming binary::deserialize exists and works similarly to json::deserialize
+            binary::deserialize(&mut buf_reader, data).map_err(DatabaseError::from)?;
         }
     }
+
+    #[cfg(feature = "logging")]
+    debug!("Data successfully loaded from {:?}", path);
 
     Ok(())
 }
