@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::io::{Read, Write}; // Make sure `Read` is correctly imported
+use std::io::{Read, Write};
 
 pub(crate) fn serialize<K, V, W>(_writer: W, _data: &HashMap<K, V>) -> Result<(), DatabaseError>
 where

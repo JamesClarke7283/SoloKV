@@ -1,0 +1,18 @@
+[package]
+name = "libsolokv"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.60.0"
+license = "LGPL-3.0-or-later"
+readme = "README.md"
+
+[dev-dependencies]
+tempfile = "3.10.0"
+
+[dependencies]
+serde = { version = "1.0.196", features = ["derive", "serde_derive"] }
+serde_json = "1.0.113"
+thiserror = "1.0.56"
+
+[lints]
+workspace = true

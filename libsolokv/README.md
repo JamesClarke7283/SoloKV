@@ -1,4 +1,4 @@
-# Solo KV
+# Solo KV Library
 
 SoloKV is a user-friendly key-value storage system that prioritizes simplicity
 and ease of use. Developed in Rust, it offers a minimalist API designed for

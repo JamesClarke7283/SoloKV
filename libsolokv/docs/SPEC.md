@@ -3,11 +3,11 @@
 ## Introduction
 
 Solo KV is a pioneering key-value storage system designed with the modern
-application developer in mind. Developed in Rust, Solo KV aims to redefine simplicity, flexibility,
-and efficiency in data storage. By encapsulating the entire database within a
-single file, Solo KV offers an unparalleled blend of performance and ease of use
-for a wide array of applications, from lightweight web services to complex,
-data-intensive applications.
+application developer in mind. Developed in Rust, Solo KV aims to redefine
+simplicity, flexibility, and efficiency in data storage. By encapsulating the
+entire database within a single file, Solo KV offers an unparalleled blend of
+performance and ease of use for a wide array of applications, from lightweight
+web services to complex, data-intensive applications.
 
 At its core, Solo KV is about removing barriers. Whether you're a seasoned
 developer or just starting out, Solo KV's intuitive interface and
@@ -245,11 +245,6 @@ Solo KV is designed with future scalability in mind, though currently focusing
 on core functionalities. As the project evolves, additional features may be
 considered. Solo KV does not support database versioning or legacy formats,
 emphasizing simplicity and forward compatibility.
-
-Based on your specifications and preferences, here is the "## Data Handling"
-section tailored for Solo KV, reflecting the changes and decisions you've made:
-
----
 
 ## Data Handling
 
