@@ -54,8 +54,8 @@ pub(crate) fn load<K, V>(
     data: &mut HashMap<K, V>,
 ) -> Result<(), DatabaseError>
 where
-    K: for<'de> Deserialize<'de> + Serialize + std::hash::Hash + std::cmp::Eq,
-    V: for<'de> Deserialize<'de> + Serialize,
+    K: for<'de> Deserialize<'de> + Serialize + std::hash::Hash + std::cmp::Eq + Debug,
+    V: for<'de> Deserialize<'de> + Serialize + Debug,
 {
     if !path.exists() {
         *data = HashMap::new();
@@ -76,13 +76,11 @@ where
 
     match format {
         StorageFormat::Json => {
-            *data = serde_json::from_slice(&buffer).map_err(DatabaseError::SerdeError)?;
+            json::deserialize(&mut buf_reader, data)?;
         }
+
         StorageFormat::Binary => {
-            // Implement binary deserialization logic here.
-            return Err(DatabaseError::InvalidFormatError(
-                "Binary format not supported yet".to_string(),
-            ));
+            binary::deserialize(&mut buf_reader, data)?;
         }
     }
 

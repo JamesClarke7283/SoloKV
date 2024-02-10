@@ -4,6 +4,7 @@ mod util;
 use crate::util::file;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -44,7 +45,7 @@ pub struct Database<K, V> {
 
 impl<K, V> Database<K, V>
 where
-    K: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + for<'de> Deserialize<'de> + Serialize,
+    K: std::hash::Hash + std::cmp::Eq + for<'de> Deserialize<'de> + Serialize + Debug,
     V: std::fmt::Debug + for<'de> Deserialize<'de> + Serialize,
 {
     /// Creates a new database instance, loading existing data from the specified path if present.

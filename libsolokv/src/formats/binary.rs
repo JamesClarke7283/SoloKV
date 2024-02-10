@@ -29,8 +29,9 @@ where
     K: Deserialize<'static> + Serialize + Eq + Hash + Debug, // Adjusted for consistency
     V: Deserialize<'static> + Serialize + Debug,             // Added + Debug for consistency
 {
-    // Placeholder: Implement actual binary deserialization logic
+    // Temporary placeholder logic. Replace with actual deserialization logic later.
+    println!("Binary deserialization not implemented yet."); // Or use logging if configured
     Err(DatabaseError::InvalidFormatError(
-        "Binary format not supported yet".to_string(),
+        "Binary format deserialization not implemented yet.".to_string(),
     ))
 }
