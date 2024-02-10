@@ -2,3 +2,5 @@ target
 Cargo.lock
 prompt.txt
 errors.log
+.idea
+.vscode
