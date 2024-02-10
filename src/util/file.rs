@@ -56,65 +56,56 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::fs::{self, File};
-    use std::io::{Read, Write};
+    use std::fs;
     use tempfile::tempdir;
 
-    fn setup_test_environment() -> (PathBuf, HashMap<String, String>) {
-        let dir = tempdir().unwrap();
-        let path = dir.path().join("test_db.json");
-        let mut data = HashMap::new();
-        data.insert("key1".to_string(), "value1".to_string());
-        data.insert("key2".to_string(), "value2".to_string());
-        (path, data)
-    }
-
+    // Example refactored test function using tempfile more effectively
     #[test]
     fn test_save_json_format() {
-        let (path, data) = setup_test_environment();
-        let save_result = save(&path, StorageFormat::Json, &data);
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("solokv_test_save_json.json");
+        let mut data: HashMap<String, String> = HashMap::new();
+        data.insert("key1".to_string(), "value1".to_string());
+        data.insert("key2".to_string(), "value2".to_string());
+
+        // Attempt to save the data
         assert!(
-            save_result.is_ok(),
-            "Failed to save data: {:?}",
-            save_result
+            save(&file_path, StorageFormat::Json, &data).is_ok(),
+            "Failed to save data"
         );
 
-        let mut file = File::open(&path).expect("File should exist after save operation");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)
-            .expect("Should be able to read the file contents");
+        // Verify file contents
+        let contents = fs::read_to_string(file_path)
+            .expect("File should exist and be readable after save operation");
         assert!(
             contents.contains("\"key1\":\"value1\"") && contents.contains("\"key2\":\"value2\"")
         );
 
-        // Clean up
-        fs::remove_file(path).expect("Failed to clean up test file");
+        // Temporary directory and file are automatically cleaned up when `dir` goes out of scope
     }
 
     #[test]
     fn test_load_json_format() {
-        let (path, expected_data) = setup_test_environment();
-        // Prepopulate the file with JSON data
-        let json_content = serde_json::to_string(&expected_data).unwrap();
-        let mut file = File::create(&path).expect("Failed to create test file for load operation");
-        writeln!(file, "{}", json_content).expect("Failed to write test data to file");
+        let dir = tempdir().unwrap(); // Create a temporary directory
+        let file_path = dir.path().join("test_load_json_format.json"); // Temporary file path
+        let mut expected_data: HashMap<String, String> = HashMap::new();
+        expected_data.insert("key1".to_string(), "value1".to_string());
+        expected_data.insert("key2".to_string(), "value2".to_string());
 
+        // Write test data to the temporary file
+        let json_content = serde_json::to_string(&expected_data).unwrap();
+        fs::write(&file_path, json_content).expect("Failed to write test data to file");
+
+        // Attempt to load the data
         let mut loaded_data: HashMap<String, String> = HashMap::new();
-        let load_result = load(&path, StorageFormat::Json, &mut loaded_data);
-        assert!(
-            load_result.is_ok(),
-            "Failed to load data: {:?}",
-            load_result
-        );
+        assert!(load(&file_path, StorageFormat::Json, &mut loaded_data).is_ok());
         assert_eq!(
             loaded_data, expected_data,
             "Loaded data does not match expected data"
         );
 
-        // Clean up
-        fs::remove_file(path).expect("Failed to clean up test file");
+        // Temporary directory and file are automatically cleaned up
     }
 
-    // TODO: Additional tests for binary format
+    // Ensure other test functions are correctly implemented as well
 }
