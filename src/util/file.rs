@@ -13,7 +13,7 @@ pub(crate) fn save<K, V>(
     data: &HashMap<K, V>,
 ) -> Result<(), DatabaseError>
 where
-    K: Serialize + Debug, // Ensure Debug is included if required by the serialization functions.
+    K: Serialize + Debug,
     V: Serialize,
 {
     let file = OpenOptions::new()

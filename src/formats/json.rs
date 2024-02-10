@@ -7,7 +7,7 @@ use std::io::{Read, Write};
 
 pub(crate) fn serialize<K, V, W>(writer: &mut W, data: &HashMap<K, V>) -> Result<(), DatabaseError>
 where
-    K: Serialize + Debug,
+    K: Serialize,
     V: Serialize,
     W: Write,
 {

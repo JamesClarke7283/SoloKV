@@ -41,6 +41,28 @@ where
     K: std::hash::Hash + std::cmp::Eq + std::fmt::Debug + for<'de> Deserialize<'de> + Serialize,
     V: std::fmt::Debug + for<'de> Deserialize<'de> + Serialize,
 {
+    /// Creates a new database instance, loading existing data from the specified path if present.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A string slice that holds the path to the database file.
+    /// * `format` - Optional. The format of the storage, defaults to `StorageFormat::Binary` if `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use solokv::{Database, StorageFormat};
+    /// use tempfile::NamedTempFile;
+    ///
+    /// let temp_file = NamedTempFile::new().unwrap();
+    /// let db_path = temp_file.path().to_str().unwrap();
+    ///
+    /// let db = Database::<String, i32>::new(db_path, Some(StorageFormat::Json)).unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is an issue reading from the specified path or if deserialization fails.
     pub fn new(path: &str, format: Option<StorageFormat>) -> Result<Self, DatabaseError> {
         let path = PathBuf::from(path);
         let format = format.unwrap_or(StorageFormat::Binary);
@@ -55,17 +77,74 @@ where
         Ok(database)
     }
 
-    #[must_use]
+    /// Returns a vector of references to all keys in the database.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use solokv::{Database, StorageFormat};
+    /// # use tempfile::NamedTempFile;
+    /// # let temp_file = NamedTempFile::new().unwrap();
+    /// # let db_path = temp_file.path().to_str().unwrap();
+    /// # let db = Database::<String, i32>::new(db_path, None).unwrap();
+    /// let keys = db.keys();
+    /// ```
     pub fn keys(&self) -> Vec<&K> {
         self.data.keys().collect()
     }
 
+    /// Retrieves the value associated with a given key.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - A reference to the key being retrieved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use solokv::{Database, StorageFormat};
+    /// # use tempfile::NamedTempFile;
+    /// # let temp_file = NamedTempFile::new().unwrap();
+    /// # let db_path = temp_file.path().to_str().unwrap();
+    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
+    /// db.put("Hello".to_string(), Some("World".to_string())).unwrap();
+    /// assert_eq!(db.get(&"Hello".to_string()).unwrap(), &"World".to_string());
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `KeyNotFoundError` if the key is not present in the database.
     pub fn get(&self, key: &K) -> Result<&V, DatabaseError> {
         self.data
             .get(key)
             .ok_or_else(|| DatabaseError::KeyNotFoundError(format!("{:?}", key)))
     }
 
+    /// Inserts or updates a key-value pair in the database. If `value` is `None`, the key is removed.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key to insert or update.
+    /// * `value` - The value to associate with the key; if `None`, the key is removed from the database.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use solokv::{Database, StorageFormat};
+    /// # use tempfile::NamedTempFile;
+    /// # let temp_file = NamedTempFile::new().unwrap();
+    /// # let db_path = temp_file.path().to_str().unwrap();
+    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
+    /// db.put("key1".to_string(), Some("value1".to_string())).unwrap();
+    /// assert_eq!(db.get(&"key1".to_string()).unwrap(), &"value1".to_string());
+    ///
+    /// db.put("key1".to_string(), None).unwrap(); // This removes "key1" from the database
+    /// assert!(db.get(&"key1".to_string()).is_err());
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is an issue saving the data to the path.
     pub fn put(&mut self, key: K, value: Option<V>) -> Result<(), DatabaseError> {
         match value {
             Some(val) => {
@@ -81,6 +160,23 @@ where
         Ok(())
     }
 
+    /// Checks if a key exists in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - A reference to the key being checked.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use solokv::{Database, StorageFormat};
+    /// # use tempfile::NamedTempFile;
+    /// # let temp_file = NamedTempFile::new().unwrap();
+    /// # let db_path = temp_file.path().to_str().unwrap();
+    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
+    /// db.put("some_key".to_string(), Some("some_value".to_string())).unwrap();
+    /// assert!(db.exists(&"some_key".to_string()));
+    /// ```
     pub fn exists(&self, key: &K) -> bool {
         self.data.contains_key(key)
     }
