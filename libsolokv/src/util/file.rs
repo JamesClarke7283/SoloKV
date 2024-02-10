@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::{File, OpenOptions};
-use std::io::{BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, Read};
 use std::path::PathBuf;
+
+#[cfg(feature = "logging")]
+use log::debug;
 
 pub(crate) fn save<K, V>(
     path: &PathBuf,
@@ -14,19 +17,33 @@ pub(crate) fn save<K, V>(
 ) -> Result<(), DatabaseError>
 where
     K: Serialize + Debug,
-    V: Serialize,
+    V: Serialize + Debug,
 {
+    #[cfg(feature = "logging")]
+    debug!("Saving data: {:?} with format: {:?}", data, format);
+
     let file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .open(path)?;
-    let mut buf_writer = BufWriter::new(file); // Correctly declare as mutable.
+    let mut buf_writer = BufWriter::new(file);
 
     match format {
-        StorageFormat::Binary => binary::serialize(&mut buf_writer, data)?,
-        StorageFormat::Json => json::serialize(&mut buf_writer, data)?,
+        StorageFormat::Binary => {
+            #[cfg(feature = "logging")]
+            debug!("Using Binary format for saving.");
+            binary::serialize(&mut buf_writer, data)?
+        }
+        StorageFormat::Json => {
+            #[cfg(feature = "logging")]
+            debug!("Using JSON format for saving.");
+            json::serialize(&mut buf_writer, data)?
+        }
     }
+
+    #[cfg(feature = "logging")]
+    debug!("Data successfully saved to {:?}", path);
 
     Ok(())
 }
@@ -37,16 +54,35 @@ pub(crate) fn load<K, V>(
     data: &mut HashMap<K, V>,
 ) -> Result<(), DatabaseError>
 where
-    K: for<'de> Deserialize<'de> + Serialize + std::hash::Hash + std::cmp::Eq + Debug, // Ensure Debug is included if required.
+    K: for<'de> Deserialize<'de> + Serialize + std::hash::Hash + std::cmp::Eq,
     V: for<'de> Deserialize<'de> + Serialize,
 {
-    if path.exists() {
-        let file = File::open(path)?;
-        let buf_reader = BufReader::new(file);
+    if !path.exists() {
+        *data = HashMap::new();
+        return Ok(());
+    }
 
-        match format {
-            StorageFormat::Binary => binary::deserialize(buf_reader, data)?,
-            StorageFormat::Json => json::deserialize(buf_reader, data)?,
+    let file = File::open(path).map_err(DatabaseError::IoError)?;
+    let mut buf_reader = BufReader::new(file);
+    let mut buffer = Vec::new();
+    buf_reader
+        .read_to_end(&mut buffer)
+        .map_err(DatabaseError::IoError)?;
+
+    if buffer.is_empty() {
+        *data = HashMap::new();
+        return Ok(());
+    }
+
+    match format {
+        StorageFormat::Json => {
+            *data = serde_json::from_slice(&buffer).map_err(DatabaseError::SerdeError)?;
+        }
+        StorageFormat::Binary => {
+            // Implement binary deserialization logic here.
+            return Err(DatabaseError::InvalidFormatError(
+                "Binary format not supported yet".to_string(),
+            ));
         }
     }
 

@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
+
+#[cfg(feature = "logging")]
+use log::error;
 
 pub(crate) fn serialize<K, V, W>(writer: &mut W, data: &HashMap<K, V>) -> Result<(), DatabaseError>
 where
@@ -11,16 +14,29 @@ where
     V: Serialize,
     W: Write,
 {
-    serde_json::to_writer(writer, data).map_err(|_| DatabaseError::SerdeError)
+    // In serialize function
+    serde_json::to_writer(writer, data).map_err(DatabaseError::from)
 }
 
 pub(crate) fn deserialize<K, V, R>(reader: R, data: &mut HashMap<K, V>) -> Result<(), DatabaseError>
 where
     R: Read,
-    K: for<'de> Deserialize<'de> + Serialize + Eq + Hash + Debug, // Adjusted
-    V: for<'de> Deserialize<'de> + Serialize,                     // Adjusted
+    K: for<'de> Deserialize<'de> + Serialize + Eq + Hash + Debug,
+    V: for<'de> Deserialize<'de> + Serialize,
 {
-    *data = serde_json::from_reader(reader).map_err(|_| DatabaseError::SerdeError)?;
+    let mut reader_buffer = BufReader::new(reader);
+    let mut buffer = Vec::new();
+    reader_buffer.read_to_end(&mut buffer)?;
+
+    // Check if the buffer is empty and return early if so
+    if buffer.is_empty() {
+        *data = HashMap::new();
+        return Ok(());
+    }
+
+    // Deserialize non-empty buffer
+    *data = serde_json::from_slice(&buffer).map_err(DatabaseError::from)?;
+
     Ok(())
 }
 

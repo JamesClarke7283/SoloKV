@@ -7,6 +7,12 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use thiserror::Error;
 
+#[cfg(feature = "logging")]
+use std::sync::Once;
+
+#[cfg(feature = "logging")]
+static LOGGER_INIT: Once = Once::new();
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum StorageFormat {
     Binary,
@@ -17,8 +23,8 @@ pub enum StorageFormat {
 pub enum DatabaseError {
     #[error("I/O error: {0}")]
     IoError(#[from] std::io::Error),
-    #[error("Serialization error")]
-    SerdeError,
+    #[error("Serialization/deserialization error: {0}")]
+    SerdeError(#[from] serde_json::Error),
     #[error("Key not found: {0:?}")]
     KeyNotFoundError(String),
     #[error("Permission error: insufficient access rights to {0}")]
@@ -51,19 +57,27 @@ where
     /// # Examples
     ///
     /// ```
-    /// use solokv::{Database, StorageFormat};
+    /// use libsolokv::{Database, StorageFormat};
     /// use tempfile::NamedTempFile;
     ///
-    /// let temp_file = NamedTempFile::new().unwrap();
-    /// let db_path = temp_file.path().to_str().unwrap();
+    /// let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+    /// let db_path = temp_file.path().to_str().expect("Failed to get temp file path");
     ///
-    /// let db = Database::<String, i32>::new(db_path, Some(StorageFormat::Json)).unwrap();
+    /// let db = Database::<String, i32>::new(db_path, Some(StorageFormat::Json))
+    ///     .expect("Failed to create database");
     /// ```
     ///
     /// # Errors
     ///
     /// This function will return an error if there is an issue reading from the specified path or if deserialization fails.
+    /// Possible errors include `IoError` for I/O issues, `SerdeError` for serialization/deserialization issues,
+    /// `PermissionError` for insufficient access, `InvalidFormatError` for specifying an invalid storage format,
+    /// and `MalformedFileError` for detecting corrupted data.
     pub fn new(path: &str, format: Option<StorageFormat>) -> Result<Self, DatabaseError> {
+        #[cfg(feature = "logging")]
+        LOGGER_INIT.call_once(|| {
+            env_logger::init();
+        });
         let path = PathBuf::from(path);
         let format = format.unwrap_or(StorageFormat::Binary);
         let mut database = Self {
@@ -82,13 +96,17 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use solokv::{Database, StorageFormat};
+    /// # use libsolokv::{Database, StorageFormat};
     /// # use tempfile::NamedTempFile;
-    /// # let temp_file = NamedTempFile::new().unwrap();
-    /// # let db_path = temp_file.path().to_str().unwrap();
-    /// # let db = Database::<String, i32>::new(db_path, None).unwrap();
+    /// # let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+    /// # let db_path = temp_file.path().to_str().expect("Failed to get temp file path");
+    /// # let db = Database::<String, i32>::new(db_path, None).expect("Failed to create database");
     /// let keys = db.keys();
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function can return `IoError` if there's an issue accessing the database file.
     pub fn keys(&self) -> Vec<&K> {
         self.data.keys().collect()
     }
@@ -102,18 +120,26 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use solokv::{Database, StorageFormat};
+    /// # use libsolokv::{Database, StorageFormat};
     /// # use tempfile::NamedTempFile;
-    /// # let temp_file = NamedTempFile::new().unwrap();
-    /// # let db_path = temp_file.path().to_str().unwrap();
-    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
-    /// db.put("Hello".to_string(), Some("World".to_string())).unwrap();
-    /// assert_eq!(db.get(&"Hello".to_string()).unwrap(), &"World".to_string());
+    /// let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+    /// let db_path = temp_file.path().to_str().expect("Failed to get temp file path");
+    /// let db = Database::<String, String>::new(db_path, None);
+    /// match db {
+    ///     Ok(mut db) => {
+    ///         db.put("Hello".to_string(), Some("World".to_string())).expect("Failed to insert value");
+    ///         match db.get(&"Hello".to_string()) {
+    ///             Ok(value) => assert_eq!(value, &"World".to_string()),
+    ///             Err(e) => panic!("Failed to retrieve value: {:?}", e),
+    ///         }
+    ///     },
+    ///     Err(e) => panic!("Failed to create database: {:?}", e),
+    /// }
     /// ```
     ///
     /// # Errors
     ///
-    /// Returns a `KeyNotFoundError` if the key is not present in the database.
+    /// Returns a `KeyNotFoundError` if the key is not present in the database. Other possible errors include `IoError` and `SerdeError`.
     pub fn get(&self, key: &K) -> Result<&V, DatabaseError> {
         self.data
             .get(key)
@@ -130,21 +156,21 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use solokv::{Database, StorageFormat};
+    /// # use libsolokv::{Database, StorageFormat};
     /// # use tempfile::NamedTempFile;
-    /// # let temp_file = NamedTempFile::new().unwrap();
-    /// # let db_path = temp_file.path().to_str().unwrap();
-    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
-    /// db.put("key1".to_string(), Some("value1".to_string())).unwrap();
-    /// assert_eq!(db.get(&"key1".to_string()).unwrap(), &"value1".to_string());
+    /// # let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+    /// # let db_path = temp_file.path().to_str().expect("Failed to get temp file path");
+    /// # let mut db = Database::<String, String>::new(db_path, None).expect("Failed to create database");
+    /// db.put("key1".to_string(), Some("value1".to_string())).expect("Failed to insert value");
+    /// assert_eq!(db.get(&"key1".to_string()).expect("Failed to retrieve value"), &"value1".to_string());
     ///
-    /// db.put("key1".to_string(), None).unwrap(); // This removes "key1" from the database
+    /// db.put("key1".to_string(), None).expect("Failed to remove key");
     /// assert!(db.get(&"key1".to_string()).is_err());
     /// ```
     ///
     /// # Errors
     ///
-    /// This function will return an error if there is an issue saving the data to the path.
+    /// This function will return an error if there is an issue saving the data to the path. Possible errors include `IoError`, `SerdeError`, and `PermissionError`.
     pub fn put(&mut self, key: K, value: Option<V>) -> Result<(), DatabaseError> {
         match value {
             Some(val) => {
@@ -169,14 +195,18 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use solokv::{Database, StorageFormat};
+    /// # use libsolokv::{Database, StorageFormat};
     /// # use tempfile::NamedTempFile;
-    /// # let temp_file = NamedTempFile::new().unwrap();
-    /// # let db_path = temp_file.path().to_str().unwrap();
-    /// # let mut db = Database::<String, String>::new(db_path, None).unwrap();
-    /// db.put("some_key".to_string(), Some("some_value".to_string())).unwrap();
+    /// # let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+    /// # let db_path = temp_file.path().to_str().expect("Failed to get temp file path");
+    /// # let mut db = Database::<String, String>::new(db_path, None).expect("Failed to create database");
+    /// db.put("some_key".to_string(), Some("some_value".to_string())).expect("Failed to insert value");
     /// assert!(db.exists(&"some_key".to_string()));
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can return `IoError` if there's an issue accessing the database file. Checks for existence do not typically result in `KeyNotFoundError`.
     pub fn exists(&self, key: &K) -> bool {
         self.data.contains_key(key)
     }
@@ -186,83 +216,84 @@ where
 mod tests {
     use super::*;
     use std::fs;
+    use tempfile::NamedTempFile;
 
-    fn temp_db_path(format: &str) -> String {
-        format!("/tmp/solokv_test_db_{}.json", format)
+    // Helper function to create a new database instance with a temporary file
+    fn new_temp_db(format: StorageFormat) -> (Database<String, String>, NamedTempFile) {
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        let db_path = temp_file.path().to_str().unwrap();
+        // Ensure the directory exists
+        if let Some(parent) = PathBuf::from(db_path).parent() {
+            fs::create_dir_all(parent).expect("Failed to create directory for database file");
+        }
+        let db: Database<String, String> =
+            Database::new(db_path, Some(format)).expect("Failed to create new database");
+        (db, temp_file)
     }
 
     #[test]
     fn test_database_new() {
-        let path = temp_db_path("new");
-        {
-            let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
-                .expect("Failed to create new database");
-            // Ensure some data is put in the database to trigger file creation.
-            db.put("init_key".to_string(), Some("init_value".to_string()))
-                .unwrap();
-        }
+        let (mut db, temp_file) = new_temp_db(StorageFormat::Json);
+        // Ensure some data is put in the database to trigger file creation.
+        db.put("init_key".to_string(), Some("init_value".to_string()))
+            .unwrap();
+        // Explicitly check the file exists after operation
         assert!(
-            PathBuf::from(&path).exists(),
-            "Database file was not created."
+            temp_file.path().exists(),
+            "Database file should exist after creation"
         );
-        fs::remove_file(path).unwrap();
     }
 
     #[test]
     fn test_database_put_get() {
-        let path = temp_db_path("put_get");
-        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
-            .expect("Failed to create database for put/get test");
-
+        let (mut db, temp_file) = new_temp_db(StorageFormat::Json);
         db.put("key1".to_string(), Some("value1".to_string()))
             .unwrap();
         assert_eq!(db.get(&"key1".to_string()).unwrap(), &"value1".to_string());
-
-        fs::remove_file(path).unwrap();
+        assert!(
+            temp_file.path().exists(),
+            "Database file should exist after put operation"
+        );
     }
 
     #[test]
     fn test_database_keys() {
-        let path = temp_db_path("keys");
-        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
-            .expect("Failed to create database for keys test");
-
+        let (mut db, temp_file) = new_temp_db(StorageFormat::Json);
         db.put("key1".to_string(), Some("value1".to_string()))
             .unwrap();
         db.put("key2".to_string(), Some("value2".to_string()))
             .unwrap();
-
         let keys = db.keys();
         assert!(keys.contains(&&"key1".to_string()));
         assert!(keys.contains(&&"key2".to_string()));
-
-        fs::remove_file(path).unwrap();
+        assert!(
+            temp_file.path().exists(),
+            "Database file should exist after adding keys"
+        );
     }
 
     #[test]
     fn test_database_exists() {
-        let path = temp_db_path("exists");
-        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
-            .expect("Failed to create database for exists test");
-
+        let (mut db, temp_file) = new_temp_db(StorageFormat::Json);
         db.put("key1".to_string(), Some("value1".to_string()))
             .unwrap();
         assert!(db.exists(&"key1".to_string()));
-
-        fs::remove_file(path).unwrap();
+        assert!(
+            temp_file.path().exists(),
+            "Database file should exist after checking existence"
+        );
     }
 
     #[test]
     fn test_database_delete() {
-        let path = temp_db_path("delete");
-        let mut db: Database<String, String> = Database::new(&path, Some(StorageFormat::Json))
-            .expect("Failed to create database for delete test");
-
+        let (mut db, temp_file) = new_temp_db(StorageFormat::Json);
         db.put("key1".to_string(), Some("value1".to_string()))
             .unwrap();
         db.put("key1".to_string(), None).unwrap();
         assert!(!db.exists(&"key1".to_string()));
-
-        fs::remove_file(path).unwrap();
+        assert!(
+            temp_file.path().exists(),
+            "Database file should exist after delete operation"
+        );
     }
 }

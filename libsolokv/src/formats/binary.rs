@@ -5,26 +5,32 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::io::{Read, Write};
 
-pub(crate) fn serialize<K, V, W>(_writer: W, _data: &HashMap<K, V>) -> Result<(), DatabaseError>
+pub(crate) fn serialize<K, V, W>(
+    _writer: &mut W,
+    _data: &HashMap<K, V>,
+) -> Result<(), DatabaseError>
 where
     K: Serialize + Debug,
-    V: Serialize,
+    V: Serialize + Debug,
     W: Write,
 {
     // Placeholder: Implement actual binary serialization logic
-    Err(DatabaseError::SerdeError)
+    Err(DatabaseError::InvalidFormatError(
+        "Binary format not supported yet".to_string(),
+    ))
 }
 
-// Adjusted for consistency with json.rs correction
 pub(crate) fn deserialize<K, V, R>(
-    _reader: R,
+    _reader: &mut R,
     _data: &mut HashMap<K, V>,
 ) -> Result<(), DatabaseError>
 where
     R: Read,
     K: Deserialize<'static> + Serialize + Eq + Hash + Debug, // Adjusted for consistency
-    V: Deserialize<'static> + Serialize,
+    V: Deserialize<'static> + Serialize + Debug,             // Added + Debug for consistency
 {
     // Placeholder: Implement actual binary deserialization logic
-    Err(DatabaseError::SerdeError)
+    Err(DatabaseError::InvalidFormatError(
+        "Binary format not supported yet".to_string(),
+    ))
 }

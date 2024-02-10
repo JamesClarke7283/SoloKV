@@ -6,13 +6,18 @@ rust-version = "1.60.0"
 license = "LGPL-3.0-or-later"
 readme = "README.md"
 
+[features]
+logging = ["log", "env_logger"]
+
 [dev-dependencies]
-tempfile = "3.10.0"
+tempfile = "3.10"
 
 [dependencies]
-serde = { version = "1.0.196", features = ["derive", "serde_derive"] }
-serde_json = "1.0.113"
-thiserror = "1.0.56"
+serde = { version = "1.0", features = ["derive", "serde_derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+log = { version = "0.4", optional = true }
+env_logger = { version = "0.11", optional = true }
 
 [lints]
 workspace = true
