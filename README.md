@@ -27,17 +27,15 @@ wide range of applications.
 
 SoloKV simplifies data storage and retrieval with the following key features:
 
-- `new`: Instantiates a new database connection, automatically detecting whether
+- `open`: Instantiates a new database connection, automatically detecting whether
   to inherit data from an existing file or to create a new database file.
 - `keys`: Provides a list of all keys in the database, making it easy to
   overview the stored data.
 - `get`: Obtains the value associated with a specific key, enabling precise data
   retrieval operations.
-- `put`: Allows for the insertion or update of a key-value pair. Utilizing this
+- `set`: Allows for the insertion or update of a key-value pair. Utilizing this
   function without specifying a value effectively deletes the key-value pair,
   offering a simple method for data management.
-- `exists`: Verifies the existence of a key within the database, facilitating
-  checks before data retrieval or modification.
 
 ## Design Philosophy
 
