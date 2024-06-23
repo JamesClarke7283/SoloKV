@@ -111,3 +111,132 @@ CRDTs are data structures that can be replicated across multiple computers in a 
 JIT compilation involves translating queries or operations into optimized machine code at runtime. This can significantly speed up complex operations by eliminating interpretation overhead and allowing for dynamic optimizations based on the actual data and query patterns.
 
 These advanced features could significantly enhance SoloKV's performance and capabilities, but they should be implemented carefully to maintain the database's simplicity and ease of use.
+
+Based on the search results and current knowledge in the field, here is a list of 20 techniques to design a fast and memory-efficient Key-Value database engine from scratch, along with their state-of-the-art status and pros/cons:
+
+1. Log-Structured Merge (LSM) Trees
+   State-of-the-art: Yes
+   Pros: Excellent write performance, efficient space utilization
+   Cons: Read amplification, background compaction overhead
+
+2. B+ Trees
+   State-of-the-art: Yes (for read-heavy workloads)
+   Pros: Excellent read performance, range queries
+   Cons: Write amplification, fragmentation
+
+3. Bw-Trees
+   State-of-the-art: Yes
+   Pros: Lock-free operations, good for multi-core systems
+   Cons: Complex implementation, potential for high memory usage
+
+4. Hash Tables
+   State-of-the-art: Yes (for simple key-value stores)
+   Pros: Fast point queries, simple implementation
+   Cons: Poor range query performance, potential collisions
+
+5. Adaptive Radix Trees (ART)
+   State-of-the-art: Yes
+   Pros: Memory-efficient, good for both point and range queries
+   Cons: Complex implementation, potential for high memory usage in worst cases
+
+6. Bloom Filters
+   State-of-the-art: Yes (as a complementary technique)
+   Pros: Space-efficient, reduces unnecessary disk reads
+   Cons: Probabilistic nature, potential for false positives
+
+7. Write-Ahead Logging (WAL)
+   State-of-the-art: Yes
+   Pros: Ensures durability, improves write performance
+   Cons: Additional storage overhead, potential bottleneck
+
+8. Memory-Mapped I/O
+   State-of-the-art: Yes
+   Pros: Simplified I/O operations, potential performance boost
+   Cons: Limited control over caching, potential for page faults
+
+9. Compression Techniques (e.g., Snappy, LZ4)
+   State-of-the-art: Yes
+   Pros: Reduces storage and I/O requirements
+   Cons: CPU overhead for compression/decompression
+
+10. In-Memory Caching
+    State-of-the-art: Yes
+    Pros: Extremely fast access for hot data
+    Cons: Limited by available memory, cache invalidation challenges
+
+11. Multi-Version Concurrency Control (MVCC)
+    State-of-the-art: Yes
+    Pros: Improved concurrency, support for time-travel queries
+    Cons: Increased storage overhead, garbage collection complexity
+
+12. Partitioning and Sharding
+    State-of-the-art: Yes
+    Pros: Improved scalability, better load distribution
+    Cons: Increased complexity, potential for uneven data distribution
+
+13. Prefix Compression
+    State-of-the-art: Yes
+    Pros: Reduces storage requirements, especially for sorted data
+    Cons: Increased complexity in data structure management
+
+14. Skip Lists
+    State-of-the-art: Yes (for certain use cases)
+    Pros: Simpler than balanced trees, good for concurrent access
+    Cons: Higher space overhead compared to some alternatives
+
+15. Hybrid Data Structures (e.g., combining LSM and B+ Trees)
+    State-of-the-art: Yes
+    Pros: Balances strengths of multiple approaches
+    Cons: Increased complexity, potential for suboptimal performance in edge cases
+
+16. Adaptive Indexing
+    State-of-the-art: Yes
+    Pros: Automatically optimizes for workload patterns
+    Cons: Overhead of monitoring and reorganization
+
+17. Copy-on-Write (CoW) Techniques
+    State-of-the-art: Yes
+    Pros: Supports efficient snapshots, reduces contention
+    Cons: Potential for increased memory usage, garbage collection overhead
+
+18. Persistent Memory Integration
+    State-of-the-art: Emerging
+    Pros: Combines performance of memory with persistence of storage
+    Cons: Requires specialized hardware, programming model adjustments
+
+19. SIMD-Optimized Operations
+    State-of-the-art: Yes
+    Pros: Improved performance for certain operations
+    Cons: Increased code complexity, potential portability issues
+
+20. Learned Indexes
+    State-of-the-art: Emerging
+    Pros: Potential for improved performance and reduced memory usage
+    Cons: Complex to implement, may not generalize well to all workloads
+
+These techniques represent a mix of well-established and emerging approaches in key-value database engine design. The choice of which techniques to use depends on the specific requirements of the system, such as the expected workload (read-heavy vs. write-heavy), scalability needs, and hardware constraints.
+
+Many modern key-value stores combine multiple techniques to achieve optimal performance. For example, RocksDB uses LSM trees with Bloom filters and prefix compression[1]. Some systems, like FASTER, introduce novel hybrid approaches that combine in-place updates with a log-structured component to achieve high performance for both reads and writes[2].
+
+When designing a key-value database engine from scratch, it's crucial to consider the trade-offs between read performance, write performance, space efficiency, and implementation complexity. The optimal design will depend on the specific use case and requirements of the system being built.
+
+Citations:
+[1] https://www.influxdata.com/key-value-database/
+[2] https://aws.amazon.com/nosql/key-value/
+[3] https://dl.acm.org/doi/10.1145/3318464.3383133
+[4] https://www.bsc.es/sites/default/files/public/about/publications/leveraging-high-performance-in-mem-key-value-data-stores-tech-report.pdf
+[5] https://scholar.harvard.edu/files/stratos/files/keyvaluestorageengines.pdf
+[6] https://hazelcast.com/glossary/key-value-store/
+[7] https://www.vldb.org/pvldb/vol10/p2037-ren.pdf
+[8] https://blog.emb.global/key-value-database/
+[9] https://severalnines.com/blog/intro-key-value-stores/
+[10] https://www.ionos.co.uk/digitalguide/hosting/technical-matters/key-value-store/
+[11] https://navyazaveri.github.io/algorithms/2020/01/12/write-a-kv-store-from-scratch.html
+[12] https://www.infoq.com/articles/data-modeling-with-key-value-nosql-data-stores/
+[13] https://stackoverflow.com/questions/4056093/what-are-the-disadvantages-of-using-a-key-value-table-over-nullable-columns-or
+[14] https://turcomat.org/index.php/turkbilmat/article/download/852/643/1533
+[15] https://www.dragonflydb.io/faq/database-design-using-key-value-tables
+[16] https://stackoverflow.com/questions/10064422/java-on-memory-efficient-key-value-store
+[17] https://www.iaeng.org/IJCS/issues_v44/issue_3/IJCS_44_3_04.pdf
+[18] https://campus.datacamp.com/courses/nosql-concepts/key-value-databases?ex=4
+[19] https://www.linkedin.com/pulse/key-value-database-yeshwanth-n-chelc
