@@ -29,6 +29,7 @@ SoloKV simplifies data storage and retrieval with the following key features:
 
 - `open`: Instantiates a new database connection, automatically detecting whether
   to inherit data from an existing file or to create a new database file.
+- `close`: Closes the database connection.
 - `keys`: Provides a list of all keys in the database, making it easy to
   overview the stored data.
 - `get`: Obtains the value associated with a specific key, enabling precise data
